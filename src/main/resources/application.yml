@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: employeeapp
+
+  datasource:
+    url: jdbc:h2:mem:employeeapp
+    driver-class-name: org.h2.Driver
+    username: employeeapp
+    password: employeeapp
+
+  h2:
+    console:
+      enabled: true
+
+
+server:
+  port: 8081
+  ssl:
+    enabled: true
+    key-store: classpath:employeeapp.p12
+    key-store-password: employeeapp
+    key-store-type: PKCS12
+    key-alias: employeeapp
