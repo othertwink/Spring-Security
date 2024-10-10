@@ -1,37 +1,40 @@
 package org.othertwink.employeeapp.service.impl;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.othertwink.employeeapp.mapper.EmployeeMapper;
+import org.othertwink.employeeapp.model.dto.EmployeeDTO;
 import org.othertwink.employeeapp.model.entity.Employee;
-import org.othertwink.employeeapp.model.entity.enums.CompanyDepartment;
-import org.othertwink.employeeapp.model.entity.enums.EmployeePosition;
 import org.othertwink.employeeapp.repository.EmployeeProjection;
 import org.othertwink.employeeapp.repository.EmployeeRepo;
 import org.othertwink.employeeapp.service.EmployeeService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
-    @Autowired
-    private EmployeeRepo employeeRepo;
 
-    @Override
-    @Transactional
-    public Employee findById(Long id) {
-        return employeeRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("No employee under Id " + id + " found"));
+    private final EmployeeRepo employeeRepo;
+
+    private final EmployeeMapper employeeMapper;
+
+    public EmployeeServiceImpl(EmployeeRepo employeeRepo, EmployeeMapper employeeMapper) {
+        this.employeeRepo = employeeRepo;
+        this.employeeMapper = employeeMapper;
     }
 
+
     @Override
     @Transactional
-    public EmployeeProjection findProjectedById(Long id) {
-        return employeeRepo.findProjectedById(id);
+    public EmployeeProjection findProjectionById(Long id) {
+        return employeeRepo.findProjectedById(id)
+                .orElseThrow(() -> new EntityNotFoundException("No employee under Id " + id + " found"));
     }
 
     @Override
@@ -40,17 +43,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepo.findAll(pageable);
     }
 
+    // TODO принимать DTO из контроллера
     @Override
     @Transactional
-    public Employee createEmployee(String firstName, String lastName, EmployeePosition position, BigDecimal salary, CompanyDepartment department) {
-        Employee createdEmployee = Employee.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .position(position)
-                .salary(salary)
-                .department(department)
-                .build();
-        return employeeRepo.save(createdEmployee);
+    public Employee createEmployee(EmployeeDTO employeeDTO) {
+        return Optional.of(employeeDTO)
+                .map(employeeMapper::map)
+                .map(employee -> {
+                    employee.setDepartment(employeeDTO.department().getDepartment());
+                    return employee;
+                })
+                .map(employeeRepo::save)
+                .orElseThrow();
     }
 
     @Override
@@ -71,5 +75,30 @@ public class EmployeeServiceImpl implements EmployeeService {
         existingEmployee.setSalary(employee.getSalary());
         existingEmployee.setDepartment(employee.getDepartment());
         return employeeRepo.save(existingEmployee);
+    }
+
+    @Override
+    public Employee findById(Long id) {
+        return employeeRepo.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return employeeRepo.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Override
+    public  Employee resetFailedLoginAttempts(Employee employee) {
+        employee.setFailedLoginAttempts(0);
+        employee.setAccountNonLocked(true);
+        return employeeRepo.save(employee);
+    }
+
+    @Override
+    public Employee increaseFailedLoginAttempts(Employee employee) {
+        employee.setFailedLoginAttempts(employee.getFailedLoginAttempts()+1);
+        return employeeRepo.save(employee);
     }
 }

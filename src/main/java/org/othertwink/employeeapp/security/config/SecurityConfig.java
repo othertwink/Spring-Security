@@ -1,33 +1,37 @@
 package org.othertwink.employeeapp.security.config;
 
 import org.othertwink.employeeapp.security.filter.JwtAuthenticationFilter;
-import org.othertwink.employeeapp.security.filter.LoggingFilter;
-import org.othertwink.employeeapp.security.service.OurUserDetailedService;
+import org.othertwink.employeeapp.service.EmployeeService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    private final OurUserDetailedService ourUserDetailedService;
+    private final EmployeeService employeeService;
 
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    private final LoggingFilter loggingFilter;
+    private final PasswordEncoder passwordEncoder;
 
-    public SecurityConfig(OurUserDetailedService ourUserDetailedService, JwtAuthenticationFilter jwtAuthenticationFilter, LoggingFilter loggingFilter) {
-        this.ourUserDetailedService = ourUserDetailedService;
+    public SecurityConfig(EmployeeService employeeService, JwtAuthenticationFilter jwtAuthenticationFilter, PasswordEncoder passwordEncoder) {
+        this.employeeService = employeeService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.loggingFilter = loggingFilter;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Bean
@@ -35,13 +39,29 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register","/home").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/employee/**").hasAnyAuthority("SUPER_ADMIN", "MODERATOR")
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // без сессии
                 .requiresChannel(channel -> channel.anyRequest().requiresSecure()) // HTTPS
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(loggingFilter, JwtAuthenticationFilter.class)
                 .build();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
+        // Установка сервиса для загрузки пользовательских данных
+        daoAuthenticationProvider.setUserDetailsService(employeeService);
+        // Установка PasswordEncoder для проверки паролей
+        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
+        return daoAuthenticationProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }

@@ -12,9 +12,22 @@ spring:
     console:
       enabled: true
 
+  security:
+    user:
+      name: othertwink
+      password: admin
+    max-failed-attempts: 5
+
+logging:
+  level:
+    root: error
+    org.othertwink.employeeapp: DEBUG
+    org.othertwink.employeeapp.security.filter: DEBUG
+  file:
+    name: logs/application.log
 
 server:
-  port: 8081
+  port: 8080
   ssl:
     enabled: true
     key-store: classpath:employeeapp.p12

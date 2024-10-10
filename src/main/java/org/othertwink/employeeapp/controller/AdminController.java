@@ -1,7 +1,8 @@
 package org.othertwink.employeeapp.controller;
 
-import org.othertwink.employeeapp.model.entity.User;
-import org.othertwink.employeeapp.security.service.OurUserDetailedService;
+import lombok.RequiredArgsConstructor;
+import org.othertwink.employeeapp.model.entity.Employee;
+import org.othertwink.employeeapp.service.EmployeeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,19 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/admin")
+@RequiredArgsConstructor
 public class AdminController {
 
-    private final OurUserDetailedService ourUserDetailedService;
-
-    public AdminController(OurUserDetailedService ourUserDetailedService) {
-        this.ourUserDetailedService = ourUserDetailedService;
-    }
+    private final EmployeeService employeeService;
 
     @PostMapping("/unlock/{username}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<String> unlockUser(@PathVariable String username) {
-        User user = (User) ourUserDetailedService.loadUserByUsername(username);
-        ourUserDetailedService.resetFailedLoginAttempts(user);
-        return ResponseEntity.ok("User " + username + " has been unlocked.");
+        Employee employee = (Employee) employeeService.loadUserByUsername(username);
+        employeeService.resetFailedLoginAttempts(employee);
+        return ResponseEntity.ok("Employee " + username + " has been unlocked.");
     }
 }

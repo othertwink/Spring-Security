@@ -3,20 +3,17 @@ package org.othertwink.employeeapp.security.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import jakarta.servlet.http.HttpServletResponse;
-import org.othertwink.employeeapp.model.entity.User;
-import org.springframework.security.core.Authentication;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JWTUtils {
@@ -28,10 +25,7 @@ public class JWTUtils {
     private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 часа
 
     public JWTUtils() {
-        // Строка, используемая для создания секретного ключа
-        String secretString = "256-bit-secret";
-        byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
-        this.secretKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");
+        this.secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     }
 
     /*Метод для генерации JWT токена на основе данных пользователя*/
@@ -46,8 +40,12 @@ public class JWTUtils {
                 .compact();
     }
 
-    // Метод для генерации токена обновления (refresh token) с дополнительными данными
-    public String generateRefreshToken(Map<String, Object> claims, UserDetails userDetails) {
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+
         return Jwts.builder()
                 .claims(claims)
                 .subject(userDetails.getUsername())
@@ -56,6 +54,7 @@ public class JWTUtils {
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     // Метод для извлечения имени пользователя из токена
     public String extractUsername(String token) {
@@ -79,6 +78,8 @@ public class JWTUtils {
     public boolean isTokenExpired(String token) {
         return extractClaims(token, Claims::getExpiration).before(new Date());
     }
+
+
 
 }
 
