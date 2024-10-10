@@ -3,6 +3,7 @@ package org.othertwink.employeeapp.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.othertwink.employeeapp.model.dto.EmployeeDTO;
 import org.othertwink.employeeapp.model.entity.Employee;
 import org.othertwink.employeeapp.repository.EmployeeProjection;
@@ -20,16 +21,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
+@RequiredArgsConstructor
 public class EmployeeController {
 
-        @Autowired
-        private DepartmentService departmentService;
 
-        @Autowired
-        private EmployeeService employeeService;
+        private final DepartmentService departmentService;
 
-        @Autowired
-        private ObjectMapper objectMapper;
+        private final EmployeeService employeeService;
+
+        private final ObjectMapper objectMapper;
 
 
         @GetMapping("/employee/all")
@@ -45,21 +45,21 @@ public class EmployeeController {
             return ResponseEntity.ok(employeeService.findProjectionById(employeeId));
         }
 
-        @PostMapping(value = "/employee/create", consumes = MediaType.APPLICATION_JSON_VALUE)
+        @PostMapping(value = "/employee/create")
         @PreAuthorize("hasAnyAuthority('SUPER_ADMIN'")
         public ResponseEntity<Employee> createEmployee(@RequestBody @Valid EmployeeDTO employee) throws IllegalArgumentException {
             Employee createdEmployee = employeeService.createEmployee(employee);
             return ResponseEntity.ok(createdEmployee);
         }
 
-        @PutMapping(value = "/employee/update", consumes = MediaType.APPLICATION_JSON_VALUE)
+        @PutMapping(value = "/employee/update")
         @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'MODERATOR')")
         public ResponseEntity<Employee> updateEmployee(@RequestBody Employee employee) throws IllegalArgumentException {
             Employee updatedEmployee = employeeService.updateEmployee(employee);
             return ResponseEntity.ok(updatedEmployee);
         }
 
-        @DeleteMapping(value = "/employee/{employeeId}/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
+        @DeleteMapping(value = "/employee/{employeeId}/delete")
         @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'MODERATOR')")
         public ResponseEntity<Employee> deleteEmployee(@PathVariable Long employeeId) throws IllegalArgumentException, JsonProcessingException {
             Employee deleted = employeeService.deleteEmployee(employeeId);
