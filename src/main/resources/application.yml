@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: employeeapp
+
+  datasource:
+    url: jdbc:h2:mem:employeeapp
+    driver-class-name: org.h2.Driver
+    username: employeeapp
+    password: employeeapp
+
+  h2:
+    console:
+      enabled: true
+
+  thymeleaf:
+    prefix: "classpath:/templates/"
+    suffix: ".html"
+    mode: "HTML"
+    cache: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: Ov23li6VColP3IjDQCFP
+            client-secret: 95f842325353b6b9dcddc0f6a605cb66d5f2a95a
+            scope: read:user
+            redirect-uri: "{baseUrl}/login/oauth2/code/github"
+            client-name: GitHub
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_basic
+            provider: github
+        provider:
+          github:
+            authorization-uri: https://github.com/login/oauth/authorize
+            token-uri: https://github.com/login/oauth/access_token
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: login
+
+    user:
+      name: othertwink
+      password: admin
+
+
+logging:
+  level:
+    root: INFO
+    org.othertwink.employeeapp: DEBUG
+    org.othertwink.employeeapp.security.filter: DEBUG
+  file:
+    name: logs/application.log
+
+server:
+  port: 8080
+  ssl:
+    enabled: true
+    key-store: classpath:employeeapp.p12
+    key-store-password: employeeapp
+    key-store-type: PKCS12
+    key-alias: employeeapp
